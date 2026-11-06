@@ -1,0 +1,161 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icon.astro';
+import { PRICING, RULES } from '../lib/config';
+import { BUSINESS } from '../lib/site';
+import { formatEUR } from '../lib/money';
+import { calcTotals } from '../lib/config';
+
+const example = calcTotals(20, 3, true);
+const example2 = calcTotals(15, 2, true);
+---
+<BaseLayout title="Precios" description="Precios claros por niño: 15 € por 2 horas y 20 € por 3 horas. Limpieza opcional y señal de 50 €.">
+  <section class="pb-10 pt-12 sm:pt-16">
+    <div class="wrap">
+      <span class="eyebrow">
+        <Icon name="credit-card" class="h-4 w-4 text-coral" />
+        Sin sorpresas
+      </span>
+      <h1 class="mt-5 max-w-3xl text-5xl leading-[1.02] sm:text-6xl">Precios que se entienden a la primera</h1>
+      <p class="mt-5 max-w-2xl text-lg leading-relaxed text-ink-soft">
+        Pagas por niño y por tiempo. Sin packs, sin menús obligatorios y sin cargos escondidos.
+        El precio incluye la sala en exclusiva, el mobiliario y el menaje.
+      </p>
+    </div>
+  </section>
+
+  <section class="pb-12">
+    <div class="wrap grid gap-5 lg:grid-cols-2">
+      <article class="card p-8">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="font-display text-sm font-bold uppercase tracking-[0.16em] text-ink/45">Franja de 2 horas</p>
+            <p class="mt-3 flex items-end gap-1">
+              <span class="font-display text-6xl font-extrabold">{formatEUR(PRICING.perChild2h)}</span>
+              <span class="pb-1.5 text-ink-soft">/ niño</span>
+            </p>
+          </div>
+          <span class="rounded-2xl bg-mint px-3 py-2 text-center font-display text-sm font-extrabold leading-tight">
+            10:30<br />o 16:30
+          </span>
+        </div>
+
+        <p class="mt-4 text-ink-soft">
+          Para cumples tranquilos o de niños pequeños. Incluye 30 minutos antes para montar la merienda.
+        </p>
+
+        <ul class="mt-6 space-y-2 text-sm text-ink-soft">
+          <li class="flex gap-2"><Icon name="check" class="h-4 w-4 text-coral" /> Sala en exclusiva</li>
+          <li class="flex gap-2"><Icon name="check" class="h-4 w-4 text-coral" /> Mesas, sillas y menaje</li>
+          <li class="flex gap-2"><Icon name="check" class="h-4 w-4 text-coral" /> Nevera, microondas y fregadero</li>
+          <li class="flex gap-2"><Icon name="check" class="h-4 w-4 text-coral" /> Limpieza opcional +{formatEUR(PRICING.cleaning)}</li>
+        </ul>
+
+        <a href="/reservas?duracion=2" class="btn-ghost mt-8 w-full">Reservar 2 horas</a>
+      </article>
+
+      <article class="card border-coral/40 p-8">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="font-display text-sm font-bold uppercase tracking-[0.16em] text-ink/45">Franja de 3 horas</p>
+            <p class="mt-3 flex items-end gap-1">
+              <span class="font-display text-6xl font-extrabold">{formatEUR(PRICING.perChild3h)}</span>
+              <span class="pb-1.5 text-ink-soft">/ niño</span>
+            </p>
+          </div>
+          <span class="rounded-2xl bg-coral px-3 py-2 text-center font-display text-sm font-extrabold leading-tight text-white">
+            10:30<br />o 16:30
+          </span>
+        </div>
+
+        <p class="mt-4 text-ink-soft">
+          El formato estrella: tiempo de sobra para jugar, merendar, cantar el cumpleaños y abrir regalos sin prisas.
+        </p>
+
+        <ul class="mt-6 space-y-2 text-sm text-ink-soft">
+          <li class="flex gap-2"><Icon name="check" class="h-4 w-4 text-coral" /> Todo lo de la franja de 2 horas</li>
+          <li class="flex gap-2"><Icon name="check" class="h-4 w-4 text-coral" /> Una hora extra de juego</li>
+          <li class="flex gap-2"><Icon name="check" class="h-4 w-4 text-coral" /> Ideal para grupos de 20+ niños</li>
+          <li class="flex gap-2"><Icon name="check" class="h-4 w-4 text-coral" /> Limpieza opcional +{formatEUR(PRICING.cleaning)}</li>
+        </ul>
+
+        <a href="/reservas?duracion=3" class="btn-primary mt-8 w-full">Reservar 3 horas</a>
+      </article>
+    </div>
+  </section>
+
+  <section class="pb-12">
+    <div class="wrap grid gap-5 lg:grid-cols-3">
+      <div class="card p-6">
+        <h2 class="text-xl">Cómo se calcula</h2>
+        <p class="mt-2 text-sm text-ink-soft">
+          Precio = niños × tarifa + limpieza (opcional). Mínimo {RULES.minChildren} niños, máximo {RULES.maxChildren}.
+        </p>
+        <div class="mt-4 rounded-2xl bg-cream p-4 text-sm">
+          <p class="flex justify-between gap-4"><span>20 niños × {formatEUR(PRICING.perChild3h)}</span><strong>{formatEUR(40000)}</strong></p>
+          <p class="mt-1 flex justify-between gap-4"><span>Limpieza</span><strong>{formatEUR(PRICING.cleaning)}</strong></p>
+          <p class="mt-3 flex justify-between gap-4 border-t border-ink/10 pt-3 text-base"><span>Total</span><strong>{formatEUR(example.subtotalCents)}</strong></p>
+        </div>
+        <p class="mt-3 text-xs text-ink/45">
+          Ejemplo con 20 niños, 3 horas y limpieza incluida.
+        </p>
+      </div>
+
+      <div class="card p-6">
+        <h2 class="text-xl">Señal y pago</h2>
+        <p class="mt-2 text-sm text-ink-soft">
+          Para bloquear la fecha dejas una señal de {formatEUR(PRICING.deposit)} con tarjeta o Bizum.
+          El resto lo pagas cuando quieras antes del cumple, desde tu página de reserva.
+        </p>
+        <div class="mt-4 rounded-2xl bg-cream p-4 text-sm">
+          <p class="flex justify-between gap-4"><span>Señal hoy</span><strong>{formatEUR(example.depositCents)}</strong></p>
+          <p class="mt-1 flex justify-between gap-4"><span>Pendiente</span><strong>{formatEUR(example.balanceCents)}</strong></p>
+        </div>
+        <p class="mt-3 text-xs text-ink/45">
+          Pago seguro con Stripe. Aceptamos tarjeta, Apple Pay, Google Pay y Bizum.
+        </p>
+      </div>
+
+      <div class="card p-6">
+        <h2 class="text-xl">Cancelaciones</h2>
+        <p class="mt-2 text-sm text-ink-soft">
+          Si cancelas con al menos {RULES.freeCancellationDays} días de antelación, te devolvemos la señal íntegra.
+          Después, la señal no es reembolsable porque la franja ya está bloqueada.
+        </p>
+        <p class="mt-3 text-sm text-ink-soft">
+          Puedes cambiar la fecha sin coste hasta {RULES.freeCancellationDays} días antes, según disponibilidad.
+        </p>
+        <a href="/legal/condiciones" class="link-underline mt-4 inline-block text-sm">Leer condiciones completas</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="pb-8">
+    <div class="wrap">
+      <div class="rounded-[2.5rem] border-2 border-ink/10 bg-white p-8 sm:p-10">
+        <div class="flex flex-wrap items-end justify-between gap-6">
+          <div class="max-w-xl">
+            <h2 class="text-3xl sm:text-4xl">Otro ejemplo, por si te ayuda</h2>
+            <p class="mt-3 text-ink-soft">
+              15 niños, 2 horas y limpieza: {formatEUR(example2.subtotalCents)} en total.
+              Dejas {formatEUR(example2.depositCents)} ahora y el resto lo pagas antes del cumple.
+            </p>
+          </div>
+          <a href="/reservas" class="btn-primary px-7 py-4">
+            Calcular mi reserva
+            <Icon name="arrow-right" class="h-5 w-5" />
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-8">
+    <div class="wrap text-center text-sm text-ink/45">
+      <p>
+        Precios con IVA incluido. ¿Tienes un grupo grande o una necesidad especial? Llámanos al
+        <a href={BUSINESS.phoneHref} class="link-underline">{BUSINESS.phone}</a>.
+      </p>
+    </div>
+  </section>
+</BaseLayout>

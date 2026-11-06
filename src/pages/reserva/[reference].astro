@@ -1,0 +1,204 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Icon from '../../components/Icon.astro';
+import { getBookingByReference } from '../../lib/db';
+import { slotLabel, TURNS } from '../../lib/config';
+import { formatLongYear, diffDays, todayISO } from '../../lib/dates';
+import { formatEUR, formatEURExact } from '../../lib/money';
+import { stripeEnabled } from '../../lib/stripe';
+
+export const prerender = false;
+
+const { reference = '' } = Astro.params;
+const booking = getBookingByReference(reference);
+
+if (!booking) {
+  return Astro.redirect('/reservas?error=No hemos encontrado esa reserva. Revisa el enlace o escríbenos.', 302);
+}
+
+const pending = Math.max(0, booking.subtotal_cents - booking.paid_cents);
+const days = diffDays(booking.date, todayISO());
+const paidParam = Astro.url.searchParams.get('pago');
+
+const statusInfo: Record<string, { label: string; tone: string; text: string }> = {
+  pending: {
+    label: 'Pendiente de pago',
+    tone: 'bg-sun/40 text-ink',
+    text: 'Hemos guardado la franja durante 35 minutos. Completa la señal para confirmarla.',
+  },
+  confirmed: {
+    label: 'Confirmada',
+    tone: 'bg-mint text-ink',
+    text: '¡Todo listo! Ya tenemos vuestra franja reservada.',
+  },
+  completed: {
+    label: 'Celebrada',
+    tone: 'bg-sky text-ink',
+    text: 'Esperamos que lo pasarais genial. ¡Gracias por venir!',
+  },
+  cancelled: {
+    label: 'Cancelada',
+    tone: 'bg-ink/10 text-ink/60',
+    text: 'Esta reserva está cancelada. Puedes elegir otra fecha cuando quieras.',
+  },
+  expired: {
+    label: 'Expirada',
+    tone: 'bg-ink/10 text-ink/60',
+    text: 'El tiempo para completar el pago ha terminado. La franja vuelve a estar disponible.',
+  },
+};
+
+const info = statusInfo[booking.status] ?? statusInfo.pending;
+const canPay = booking.status === 'pending' || (booking.status === 'confirmed' && pending > 0 && days >= 0);
+const manageUrl = `/reserva/${booking.reference}/gestionar?token=${booking.manage_token}`;
+---
+
+<BaseLayout title={`Reserva ${booking.reference}`} noindex>
+  <section class="pb-10 pt-12 sm:pt-16">
+    <div class="wrap max-w-4xl">
+      <div class="flex flex-wrap items-center gap-3">
+        <span class:list={['badge', info.tone]}>{info.label}</span>
+        <span class="text-sm text-ink/45">Referencia {booking.reference}</span>
+      </div>
+
+      <h1 class="mt-4 text-4xl leading-tight sm:text-5xl">
+        {booking.status === 'confirmed' ? '¡Reserva confirmada, ' : 'Tu reserva, '}{booking.customer_name.split(' ')[0]}!
+      </h1>
+      <p class="mt-3 max-w-2xl text-lg text-ink-soft">{info.text}</p>
+
+      {paidParam === 'ok' && (
+        <div class="mt-6 rounded-2xl border-2 border-mint bg-mint/20 p-4 text-sm font-semibold">
+          Pago recibido. Si Stripe tarda unos segundos en confirmarlo, actualiza esta página.
+        </div>
+      )}
+      {paidParam === 'cancelado' && (
+        <div class="mt-6 rounded-2xl border-2 border-coral/40 bg-coral/10 p-4 text-sm font-semibold text-coral-dark">
+          Has cancelado el pago. La reserva sigue guardada hasta que termine el plazo.
+        </div>
+      )}
+    </div>
+  </section>
+
+  <section class="pb-12">
+    <div class="wrap grid max-w-4xl gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+      <div class="card p-6 sm:p-8">
+        <h2 class="text-2xl">Detalles del cumple</h2>
+
+        <dl class="mt-5 divide-y-2 divide-ink/10">
+          {[
+            ['Fecha', formatLongYear(booking.date)],
+            ['Horario', `${slotLabel(booking.turn, booking.duration)} · ${TURNS[booking.turn].label}`],
+            ['Duración', `${booking.duration} horas`],
+            ['Cumpleañero/a', `${booking.child_name}${booking.child_age ? ` · ${booking.child_age} años` : ''}`],
+            ['Niños', String(booking.children_final ?? booking.children)],
+            ['Limpieza extra', booking.cleaning === 1 ? 'Sí, incluida' : 'No'],
+            ['Titular', booking.customer_name],
+            ['Email', booking.email],
+            ['Teléfono', booking.phone],
+          ].map(([label, value]) => (
+            <div class="flex flex-wrap justify-between gap-3 py-3 text-sm">
+              <dt class="text-ink-soft">{label}</dt>
+              <dd class="text-right font-semibold">{value}</dd>
+            </div>
+          ))}
+        </dl>
+
+        {booking.notes && (
+          <div class="mt-5 rounded-2xl bg-cream p-4">
+            <p class="font-display text-sm font-bold">Tus notas</p>
+            <p class="mt-1 text-sm text-ink-soft">{booking.notes}</p>
+          </div>
+        )}
+
+        <div class="mt-6 rounded-2xl border-2 border-ink/10 bg-white p-4 text-sm">
+          <p class="flex items-start gap-2 text-ink-soft">
+            <Icon name="pin" class="mt-0.5 h-4 w-4 shrink-0 text-coral" />
+            Calle de la Alegría, 24 · 28901 Getafe, Madrid
+          </p>
+          <p class="mt-2 flex items-start gap-2 text-ink-soft">
+            <Icon name="clock" class="mt-0.5 h-4 w-4 shrink-0 text-coral" />
+            Podéis entrar 30 minutos antes para montar la merienda.
+          </p>
+        </div>
+      </div>
+
+      <aside class="flex flex-col gap-5">
+        <div class="card p-6">
+          <h2 class="text-xl">Pago</h2>
+          <dl class="mt-4 space-y-2 text-sm">
+            <div class="flex justify-between gap-3">
+              <dt class="text-ink-soft">Total</dt>
+              <dd class="font-semibold">{formatEURExact(booking.subtotal_cents)}</dd>
+            </div>
+            <div class="flex justify-between gap-3">
+              <dt class="text-ink-soft">Pagado</dt>
+              <dd class="font-semibold text-green-700">{formatEURExact(booking.paid_cents)}</dd>
+            </div>
+            <div class="flex justify-between gap-3 border-t-2 border-ink/10 pt-2">
+              <dt class="font-display font-extrabold">Pendiente</dt>
+              <dd class="font-display text-lg font-extrabold">{formatEURExact(pending)}</dd>
+            </div>
+          </dl>
+
+          {canPay && pending > 0 && (
+            <>
+              {booking.status === 'pending' && (
+                <p class="mt-4 text-xs text-ink/50">
+                  La franja está bloqueada hasta {booking.hold_expires_at ? new Date(booking.hold_expires_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : 'dentro de unos minutos'}.
+                </p>
+              )}
+              {stripeEnabled() ? (
+                <form method="post" action="/api/pay" class="mt-4">
+                  <input type="hidden" name="reference" value={booking.reference} />
+                  <input type="hidden" name="kind" value={booking.status === 'pending' ? 'deposit' : 'balance'} />
+                  <button type="submit" class="btn-primary w-full">
+                    {booking.status === 'pending' ? `Pagar ${formatEUR(booking.deposit_cents)} de señal` : `Pagar ${formatEURExact(pending)}`}
+                    <Icon name="arrow-right" class="h-4 w-4" />
+                  </button>
+                </form>
+              ) : (
+                <a href={`/pago-demo/${booking.reference}`} class="btn-primary mt-4 w-full">
+                  {booking.status === 'pending' ? `Pagar ${formatEUR(booking.deposit_cents)} (demo)` : `Pagar ${formatEURExact(pending)} (demo)`}
+                  <Icon name="arrow-right" class="h-4 w-4" />
+                </a>
+              )}
+              <p class="mt-3 flex items-center justify-center gap-2 text-xs text-ink/45">
+                <Icon name="lock" class="h-3.5 w-3.5" /> Tarjeta o Bizum · pago seguro
+              </p>
+            </>
+          )}
+
+          {pending === 0 && booking.status !== 'cancelled' && (
+            <div class="mt-4 rounded-2xl bg-mint/30 p-4 text-sm font-semibold">
+              <Icon name="check" class="mr-1 inline h-4 w-4" /> Pago completo. ¡Nos vemos!
+            </div>
+          )}
+
+          {booking.status === 'cancelled' && (
+            <a href="/reservas" class="btn-ghost mt-4 w-full">Elegir otra fecha</a>
+          )}
+        </div>
+
+        <div class="card p-6">
+          <h2 class="text-xl">Gestionar</h2>
+          <p class="mt-2 text-sm text-ink-soft">
+            Desde aquí puedes cambiar el número de niños, pagar el saldo o cancelar la reserva.
+          </p>
+          <a href={manageUrl} class="btn-ghost mt-4 w-full">
+            Gestionar mi reserva
+            <Icon name="arrow-right" class="h-4 w-4" />
+          </a>
+          <a href={`/api/ics/${booking.reference}`} class="mt-3 flex items-center justify-center gap-2 text-sm font-semibold text-ink-soft hover:text-ink">
+            <Icon name="calendar" class="h-4 w-4" /> Añadir a mi calendario
+          </a>
+        </div>
+
+        <div class="rounded-2xl border-2 border-ink/10 bg-white p-5 text-sm">
+          <p class="font-display font-bold">¿Necesitas ayuda?</p>
+          <p class="mt-1 text-ink-soft">Escríbenos y te contestamos hoy.</p>
+          <a href="/contacto" class="link-underline mt-2 inline-block">Contactar</a>
+        </div>
+      </aside>
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,21 @@
+---
+interface Props {
+  class?: string;
+  showText?: boolean;
+}
+const { class: className = '', showText = true } = Astro.props;
+---
+<span class={`inline-flex items-center gap-3 ${className}`}>
+  <svg viewBox="0 0 40 40" class="h-10 w-10 shrink-0" aria-hidden="true">
+    <rect x="2" y="2" width="36" height="36" rx="12" fill="#FF6B5A" stroke="#17172B" stroke-width="2.5" />
+    <circle cx="14" cy="16.5" r="2.6" fill="#17172B" />
+    <circle cx="26" cy="16.5" r="2.6" fill="#17172B" />
+    <path d="M13 24c2.6 4.2 11.4 4.2 14 0" stroke="#17172B" stroke-width="2.8" fill="none" stroke-linecap="round" />
+    <circle cx="33" cy="8" r="4.2" fill="#FFC94A" stroke="#17172B" stroke-width="2" />
+  </svg>
+  {showText && (
+    <span class="font-display text-2xl font-extrabold leading-none tracking-tight text-ink">
+      Funny<span class="text-coral">Kids</span>
+    </span>
+  )}
+</span>

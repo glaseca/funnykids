@@ -1,0 +1,25 @@
+{
+  "name": "funnykids",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "start": "node ./dist/server/entry.mjs",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/node": "^11.1.11",
+    "astro": "^7.4.7",
+    "stripe": "^23.1.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "@tailwindcss/vite": "^4.3.4",
+    "@types/node": "^24.0.0",
+    "tailwindcss": "^4.3.4",
+    "typescript": "^6.0.3"
+  }
+}

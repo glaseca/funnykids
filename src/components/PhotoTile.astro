@@ -1,0 +1,51 @@
+---
+interface Props {
+  emoji: string;
+  label: string;
+  color?: 'mint' | 'sun' | 'coral' | 'lilac' | 'sky';
+  class?: string;
+  hideLabel?: boolean;
+}
+
+const {
+  emoji,
+  label,
+  color = 'mint',
+  class: className = '',
+  hideLabel = false,
+} = Astro.props;
+
+const gradients: Record<string, string> = {
+  mint: 'from-[#b6f7e2] via-[#7fe6c4] to-[#3fc39e]',
+  sun: 'from-[#ffe6a1] via-[#ffd166] to-[#f5a623]',
+  coral: 'from-[#ffb3a8] via-[#ff8b7c] to-[#f05a45]',
+  lilac: 'from-[#e2d7ff] via-[#c3b0ff] to-[#9a7dff]',
+  sky: 'from-[#d9f0ff] via-[#bfe6ff] to-[#7cc7f5]',
+};
+
+const blobs: Record<string, string> = {
+  mint: 'bg-white/40',
+  sun: 'bg-white/35',
+  coral: 'bg-white/30',
+  lilac: 'bg-white/35',
+  sky: 'bg-white/40',
+};
+---
+<div class:list={['group relative isolate overflow-hidden rounded-[2rem] border-2 border-ink/10', className]}>
+  <div class:list={['absolute inset-0 bg-gradient-to-br', gradients[color]]} aria-hidden="true"></div>
+  <div class:list={['absolute -left-10 -top-12 h-44 w-44 rounded-full blur-2xl', blobs[color]]} aria-hidden="true"></div>
+  <div class:list={['absolute -bottom-16 -right-10 h-52 w-52 rounded-full blur-2xl', blobs[color]]} aria-hidden="true"></div>
+  <div class="absolute inset-0 bg-checker opacity-[0.18]" aria-hidden="true"></div>
+
+  <div class="relative flex h-full min-h-[9rem] flex-col items-center justify-center gap-3 p-6">
+    <span class="text-6xl drop-shadow-[0_4px_0_rgba(23,23,43,0.15)] transition-transform duration-300 group-hover:-translate-y-1 group-hover:scale-110 sm:text-7xl" aria-hidden="true">
+      {emoji}
+    </span>
+  </div>
+
+  {!hideLabel && (
+    <span class="absolute bottom-3 left-3 rounded-full border border-ink/10 bg-white/90 px-3 py-1 font-display text-xs font-bold text-ink backdrop-blur">
+      {label}
+    </span>
+  )}
+</div>

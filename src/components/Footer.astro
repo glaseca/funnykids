@@ -1,0 +1,95 @@
+---
+import Icon from './Icon.astro';
+import { BUSINESS, NAV, SOCIALS } from '../lib/site';
+
+const year = new Date().getFullYear();
+---
+<footer class="mt-24 border-t-2 border-ink/10 bg-ink text-cream">
+  <div class="wrap grid gap-10 py-14 md:grid-cols-2 lg:grid-cols-4">
+    <div class="lg:col-span-1">
+      <a href="/" class="rounded-2xl text-cream" aria-label={`${BUSINESS.name}, inicio`}>
+        <span class="inline-flex items-center gap-3">
+          <svg viewBox="0 0 40 40" class="h-10 w-10" aria-hidden="true">
+            <rect x="2" y="2" width="36" height="36" rx="12" fill="#FF6B5A" stroke="#FFF7EC" stroke-width="2.5" />
+            <circle cx="14" cy="16.5" r="2.6" fill="#FFF7EC" />
+            <circle cx="26" cy="16.5" r="2.6" fill="#FFF7EC" />
+            <path d="M13 24c2.6 4.2 11.4 4.2 14 0" stroke="#FFF7EC" stroke-width="2.8" fill="none" stroke-linecap="round" />
+            <circle cx="33" cy="8" r="4.2" fill="#FFC94A" stroke="#FFF7EC" stroke-width="2" />
+          </svg>
+          <span class="font-display text-2xl font-extrabold leading-none">
+            Funny<span class="text-coral">Kids</span>
+          </span>
+        </span>
+      </a>
+      <p class="mt-4 max-w-xs text-sm leading-relaxed text-cream/70">
+        Fiestas infantiles en {BUSINESS.addressShort}. Sala en exclusiva, piscina de bolas y cero preocupaciones.
+      </p>
+      <div class="mt-5 flex gap-2">
+        {SOCIALS.map((s) => (
+          <a
+            href={s.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={s.label}
+            class="flex h-10 w-10 items-center justify-center rounded-full border border-cream/20 text-cream/80 transition hover:border-cream/50 hover:text-cream"
+          >
+            <Icon name={s.icon} class="h-4 w-4" />
+          </a>
+        ))}
+      </div>
+    </div>
+
+    <div>
+      <h2 class="font-display text-sm font-bold uppercase tracking-[0.16em] text-cream/50">Explorar</h2>
+      <ul class="mt-4 space-y-2 text-sm">
+        {NAV.map((item) => (
+          <li>
+            <a href={item.href} class="text-cream/80 transition hover:text-cream">{item.label}</a>
+          </li>
+        ))}
+        <li><a href="/legal/condiciones" class="text-cream/80 transition hover:text-cream">Condiciones de reserva</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h2 class="font-display text-sm font-bold uppercase tracking-[0.16em] text-cream/50">Contacto</h2>
+      <ul class="mt-4 space-y-3 text-sm text-cream/80">
+        <li class="flex gap-2">
+          <Icon name="pin" class="mt-0.5 h-4 w-4 shrink-0 text-coral" />
+          <span>{BUSINESS.address}</span>
+        </li>
+        <li class="flex gap-2">
+          <Icon name="phone" class="mt-0.5 h-4 w-4 shrink-0 text-coral" />
+          <a href={BUSINESS.phoneHref} class="hover:text-cream">{BUSINESS.phone}</a>
+        </li>
+        <li class="flex gap-2">
+          <Icon name="mail" class="mt-0.5 h-4 w-4 shrink-0 text-coral" />
+          <a href={`mailto:${BUSINESS.email}`} class="hover:text-cream">{BUSINESS.email}</a>
+        </li>
+      </ul>
+    </div>
+
+    <div>
+      <h2 class="font-display text-sm font-bold uppercase tracking-[0.16em] text-cream/50">Horario</h2>
+      <ul class="mt-4 space-y-2 text-sm text-cream/80">
+        {BUSINESS.hours.map((h) => (
+          <li>
+            <span class="block font-semibold text-cream">{h.days}</span>
+            <span class="text-cream/60">{h.time}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+
+  <div class="border-t border-cream/15">
+    <div class="wrap flex flex-col items-center justify-between gap-3 py-6 text-xs text-cream/50 sm:flex-row">
+      <p>© {year} {BUSINESS.legalName}. Todos los derechos reservados.</p>
+      <nav class="flex flex-wrap items-center justify-center gap-4" aria-label="Legal">
+        <a href="/legal/aviso" class="hover:text-cream">Aviso legal</a>
+        <a href="/legal/privacidad" class="hover:text-cream">Privacidad</a>
+        <a href="/legal/condiciones" class="hover:text-cream">Condiciones</a>
+      </nav>
+    </div>
+  </div>
+</footer>

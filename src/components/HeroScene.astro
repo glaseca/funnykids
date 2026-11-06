@@ -1,0 +1,135 @@
+---
+const flags = [
+  { x: 42, y: 88, color: '#FF6B5A' },
+  { x: 112, y: 110, color: '#FFC94A' },
+  { x: 182, y: 118, color: '#7FE6C4' },
+  { x: 252, y: 112, color: '#C3B0FF' },
+  { x: 322, y: 100, color: '#FF6B5A' },
+  { x: 392, y: 88, color: '#FFC94A' },
+  { x: 462, y: 81, color: '#7FE6C4' },
+  { x: 532, y: 78, color: '#C3B0FF' },
+];
+
+const balls = [
+  { x: 105, y: 500, r: 30, c: '#FF6B5A' },
+  { x: 165, y: 512, r: 26, c: '#FFC94A' },
+  { x: 222, y: 498, r: 32, c: '#C3B0FF' },
+  { x: 285, y: 514, r: 27, c: '#FFF7EC' },
+  { x: 345, y: 500, r: 30, c: '#FFC94A' },
+  { x: 405, y: 516, r: 25, c: '#FF6B5A' },
+  { x: 462, y: 498, r: 31, c: '#7FE6C4' },
+  { x: 516, y: 512, r: 24, c: '#C3B0FF' },
+  { x: 88, y: 448, r: 27, c: '#C3B0FF' },
+  { x: 145, y: 452, r: 31, c: '#FF6B5A' },
+  { x: 208, y: 442, r: 26, c: '#FFC94A' },
+  { x: 268, y: 456, r: 30, c: '#7FE6C4' },
+  { x: 330, y: 444, r: 27, c: '#FF6B5A' },
+  { x: 392, y: 458, r: 31, c: '#FFF7EC' },
+  { x: 452, y: 446, r: 26, c: '#FFC94A' },
+  { x: 512, y: 456, r: 28, c: '#FF6B5A' },
+  { x: 120, y: 396, r: 25, c: '#7FE6C4' },
+  { x: 182, y: 402, r: 29, c: '#C3B0FF' },
+  { x: 248, y: 392, r: 24, c: '#FF6B5A' },
+  { x: 310, y: 404, r: 28, c: '#FFC94A' },
+  { x: 374, y: 394, r: 25, c: '#C3B0FF' },
+  { x: 436, y: 404, r: 29, c: '#7FE6C4' },
+  { x: 492, y: 392, r: 23, c: '#FFF7EC' },
+  { x: 160, y: 352, r: 22, c: '#FFC94A' },
+  { x: 224, y: 356, r: 26, c: '#FF6B5A' },
+  { x: 292, y: 348, r: 21, c: '#7FE6C4' },
+  { x: 356, y: 358, r: 25, c: '#C3B0FF' },
+  { x: 420, y: 350, r: 22, c: '#FFC94A' },
+  { x: 476, y: 358, r: 24, c: '#FF6B5A' },
+];
+---
+<svg viewBox="0 0 600 560" class="h-full w-full" role="img" aria-label="Ilustración de una fiesta infantil con piscina de bolas">
+  <defs>
+    <linearGradient id="fk-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#CFEBFF" />
+      <stop offset="100%" stop-color="#FFF1D4" />
+    </linearGradient>
+    <linearGradient id="fk-pit" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#9BF2D8" />
+      <stop offset="100%" stop-color="#5FD9B4" />
+    </linearGradient>
+    <clipPath id="fk-rounded">
+      <rect width="600" height="560" rx="44" />
+    </clipPath>
+    <clipPath id="fk-pit-clip">
+      <path d="M60 330H540V450A80 80 0 0 1 460 530H140A80 80 0 0 1 60 450Z" />
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#fk-rounded)">
+    <rect width="600" height="560" fill="url(#fk-sky)" />
+
+    <!-- sol -->
+    <circle cx="498" cy="112" r="46" fill="#FFC94A" opacity="0.95" />
+    <circle cx="498" cy="112" r="60" fill="#FFC94A" opacity="0.25" />
+
+    <!-- nubes -->
+    <g fill="#FFFFFF" opacity="0.85">
+      <ellipse cx="132" cy="128" rx="48" ry="26" />
+      <ellipse cx="176" cy="138" rx="36" ry="20" />
+      <ellipse cx="88" cy="140" rx="30" ry="17" />
+      <ellipse cx="404" cy="62" rx="34" ry="18" />
+      <ellipse cx="436" cy="70" rx="24" ry="13" />
+    </g>
+
+    <!-- guirnalda -->
+    <path d="M-10 70Q150 152 300 100T610 78" stroke="#17172B" stroke-width="3" fill="none" stroke-linecap="round" />
+    {flags.map((f) => (
+      <path
+        d={`M${f.x - 16} ${f.y}L${f.x + 16} ${f.y}L${f.x} ${f.y + 34}Z`}
+        fill={f.color}
+        stroke="#17172B"
+        stroke-width="2.5"
+        stroke-linejoin="round"
+      />
+    ))}
+
+    <!-- confeti -->
+    <g opacity="0.9">
+      <circle cx="76" cy="230" r="5" fill="#FF6B5A" />
+      <circle cx="520" cy="214" r="6" fill="#C3B0FF" />
+      <circle cx="330" cy="188" r="4" fill="#7FE6C4" />
+      <rect x="250" y="232" width="10" height="10" rx="3" fill="#FFC94A" transform="rotate(18 255 237)" />
+      <rect x="452" y="168" width="9" height="9" rx="3" fill="#FF6B5A" transform="rotate(-22 456 172)" />
+      <rect x="150" y="196" width="8" height="8" rx="2.5" fill="#C3B0FF" transform="rotate(32 154 200)" />
+      <path d="M60 300c8-10 18-10 26 0" stroke="#17172B" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.35" />
+      <path d="M500 300c8-10 18-10 26 0" stroke="#17172B" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.35" />
+    </g>
+
+    <!-- globos -->
+    <g>
+      <path d="M108 206c-4 26-2 44 4 62" stroke="#17172B" stroke-width="2.5" fill="none" opacity="0.55" />
+      <path d="M150 184c6 22 8 40 6 62" stroke="#17172B" stroke-width="2.5" fill="none" opacity="0.55" />
+      <ellipse cx="108" cy="176" rx="27" ry="32" fill="#FF6B5A" stroke="#17172B" stroke-width="2.5" />
+      <ellipse cx="154" cy="152" rx="22" ry="27" fill="#FFC94A" stroke="#17172B" stroke-width="2.5" />
+      <path d="M104 206l4 8 4-8" fill="#FF6B5A" stroke="#17172B" stroke-width="2" />
+      <path d="M150 178l4 8 4-8" fill="#FFC94A" stroke="#17172B" stroke-width="2" />
+    </g>
+
+    <!-- sombra -->
+    <ellipse cx="300" cy="540" rx="250" ry="24" fill="#17172B" opacity="0.08" />
+
+    <!-- piscina de bolas -->
+    <path d="M60 330H540V450A80 80 0 0 1 460 530H140A80 80 0 0 1 60 450Z" fill="#FFFDF8" stroke="#17172B" stroke-width="3" />
+    <path d="M60 330H540V450A80 80 0 0 1 460 530H140A80 80 0 0 1 60 450Z" fill="url(#fk-pit)" opacity="0.9" />
+
+    <g clip-path="url(#fk-pit-clip)">
+      {balls.map((b) => (
+        <circle cx={b.x} cy={b.y} r={b.r} fill={b.c} stroke="#17172B" stroke-width="2.5" />
+      ))}
+      <path d="M60 330H540V352H60Z" fill="#17172B" opacity="0.06" />
+    </g>
+
+    <!-- borde -->
+    <rect x="52" y="312" width="496" height="30" rx="15" fill="#FF6B5A" stroke="#17172B" stroke-width="3" />
+    <rect x="72" y="320" width="120" height="7" rx="3.5" fill="#FFFFFF" opacity="0.45" />
+
+    <!-- patas -->
+    <rect x="104" y="524" width="18" height="26" rx="9" fill="#17172B" />
+    <rect x="478" y="524" width="18" height="26" rx="9" fill="#17172B" />
+  </g>
+</svg>

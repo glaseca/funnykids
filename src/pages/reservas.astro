@@ -1,0 +1,582 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icon.astro';
+import { monthAvailability, statusLabel } from '../lib/availability';
+import { PRICING, RULES, TURNS, endTime, isValidDuration, isValidTurn, type Duration, type Turn } from '../lib/config';
+import { addDaysISO, formatLongYear, monthGrid, monthKey, monthLabel, parseMonthKey, shiftMonth, todayISO, weekdayName } from '../lib/dates';
+import { formatEUR } from '../lib/money';
+
+export const prerender = false;
+
+const url = Astro.url;
+const params = url.searchParams;
+
+const today = todayISO();
+const current = parseMonthKey(today.slice(0, 7)) ?? { year: new Date().getUTCFullYear(), month: new Date().getUTCMonth() + 1 };
+
+const requestedMonth = parseMonthKey(params.get('mes') ?? '') ?? current;
+const minMonth = current;
+const maxMonthDate = addDaysISO(today, RULES.horizonDays);
+const maxMonth = parseMonthKey(maxMonthDate.slice(0, 7)) ?? current;
+
+const monthIndex = (m: { year: number; month: number }) => m.year * 12 + (m.month - 1);
+let { year, month } = requestedMonth;
+if (monthIndex({ year, month }) < monthIndex(minMonth)) {
+  year = minMonth.year;
+  month = minMonth.month;
+}
+if (monthIndex({ year, month }) > monthIndex(maxMonth)) {
+  year = maxMonth.year;
+  month = maxMonth.month;
+}
+
+const availability = monthAvailability(year, month);
+const weeks = monthGrid(year, month);
+const monthPrefix = monthKey(year, month);
+
+const prev = shiftMonth(year, month, -1);
+const next = shiftMonth(year, month, 1);
+const hasPrev = monthIndex(prev) >= monthIndex(minMonth);
+const hasNext = monthIndex(next) <= monthIndex(maxMonth);
+
+const rawDate = params.get('fecha');
+const rawTurn = params.get('turno');
+const selectedDate =
+  rawDate &&
+  /^\d{4}-\d{2}-\d{2}$/.test(rawDate) &&
+  rawDate.startsWith(monthPrefix) &&
+  availability.has(rawDate)
+    ? rawDate
+    : null;
+
+const selectedTurn: Turn | null = selectedDate && isValidTurn(rawTurn) ? rawTurn : null;
+
+const durationParam = Number(params.get('duracion'));
+const duration: Duration = isValidDuration(durationParam) ? durationParam : 3;
+
+const childrenParam = Number(params.get('ninos'));
+const initialChildren = Number.isInteger(childrenParam) && childrenParam >= RULES.minChildren && childrenParam <= RULES.maxChildren
+  ? childrenParam
+  : 20;
+
+const selectedAvailability = selectedDate ? availability.get(selectedDate) ?? null : null;
+const turnIsFree = selectedTurn && selectedAvailability ? selectedAvailability[selectedTurn] === 'free' : false;
+
+const error = params.get('error');
+const notice = params.get('aviso');
+
+function hrefFor(paramsObj: Record<string, string | number | null | undefined>): string {
+  const next = new URLSearchParams(params);
+  next.delete('error');
+  next.delete('aviso');
+  for (const [key, value] of Object.entries(paramsObj)) {
+    if (value === null || value === undefined || value === '') next.delete(key);
+    else next.set(key, String(value));
+  }
+  return `/reservas?${next.toString()}`;
+}
+
+---
+
+<BaseLayout title="Reservas" description="Consulta la disponibilidad real de Funny Kids y reserva tu franja con 50 € de señal." noindex>
+  <section class="pb-8 pt-12 sm:pt-16">
+    <div class="wrap">
+      <span class="eyebrow">
+        <Icon name="calendar" class="h-4 w-4 text-coral" />
+        Calendario en tiempo real
+      </span>
+      <h1 class="mt-5 max-w-3xl text-5xl leading-[1.02] sm:text-6xl">
+        Elige el día y os guardamos la sala
+      </h1>
+      <p class="mt-5 max-w-2xl text-lg leading-relaxed text-ink-soft">
+        Dos franjas por día, una por la mañana y otra por la tarde. Cuando reserves, la sala queda
+        bloqueada solo para vosotros.
+      </p>
+
+      <div class="mt-6 flex flex-wrap gap-2">
+        <span class="chip"><Icon name="clock" class="h-4 w-4" /> {TURNS.AM.start} o {TURNS.PM.start}</span>
+        <span class="chip"><Icon name="users" class="h-4 w-4" /> {RULES.minChildren}–{RULES.maxChildren} niños</span>
+        <span class="chip"><Icon name="lock" class="h-4 w-4" /> {formatEUR(PRICING.deposit)} de señal</span>
+        <span class="chip"><Icon name="calendar" class="h-4 w-4" /> Antelación mínima {RULES.leadDays} días</span>
+      </div>
+
+      {(error || notice) && (
+        <div
+          class:list={[
+            'mt-6 rounded-2xl border-2 p-4 text-sm font-semibold',
+            error ? 'border-coral/40 bg-coral/10 text-coral-dark' : 'border-mint/60 bg-mint/20 text-ink',
+          ]}
+          role="status"
+        >
+          {error ?? notice}
+        </div>
+      )}
+    </div>
+  </section>
+
+  <section class="pb-12">
+    <div class="wrap grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
+      <!-- Calendario -->
+      <div class="card p-5 sm:p-7">
+        <div class="flex items-center justify-between gap-3">
+          {hasPrev ? (
+            <a
+              href={hrefFor({ mes: monthKey(prev.year, prev.month), fecha: null, turno: null })}
+              class="flex h-11 w-11 items-center justify-center rounded-full border-2 border-ink/15 bg-white hover:border-ink/40"
+              aria-label={`Mes anterior: ${monthLabel(prev.year, prev.month)}`}
+            >
+              <Icon name="chevron-left" class="h-5 w-5" />
+            </a>
+          ) : (
+            <span class="h-11 w-11" aria-hidden="true"></span>
+          )}
+
+          <h2 class="text-center font-display text-2xl font-extrabold sm:text-3xl" aria-live="polite">
+            {monthLabel(year, month)}
+          </h2>
+
+          {hasNext ? (
+            <a
+              href={hrefFor({ mes: monthKey(next.year, next.month), fecha: null, turno: null })}
+              class="flex h-11 w-11 items-center justify-center rounded-full border-2 border-ink/15 bg-white hover:border-ink/40"
+              aria-label={`Mes siguiente: ${monthLabel(next.year, next.month)}`}
+            >
+              <Icon name="chevron-right" class="h-5 w-5" />
+            </a>
+          ) : (
+            <span class="h-11 w-11" aria-hidden="true"></span>
+          )}
+        </div>
+
+        <div class="mt-5 grid grid-cols-7 gap-1 text-center" aria-hidden="true">
+          {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d) => (
+            <span class="pb-2 font-display text-xs font-bold uppercase tracking-wide text-ink/40">{d}</span>
+          ))}
+        </div>
+
+        <div class="grid grid-cols-7 gap-1 sm:gap-1.5">
+          {weeks.flat().map((day) => {
+            const info = availability.get(day.iso);
+            const free = info ? (info.AM === 'free' || info.PM === 'free') : false;
+            const isSelected = selectedDate === day.iso;
+            const isToday = day.iso === today;
+            const inRange = day.inMonth;
+
+            const cellClass = [
+              'relative flex min-h-[3.6rem] flex-col items-center justify-center gap-1 rounded-xl border-2 px-1 py-1.5 text-sm transition sm:min-h-[4.2rem]',
+              isSelected
+                ? 'border-ink bg-ink text-cream shadow-[0_3px_0_0_#17172B]'
+                : free
+                  ? 'border-ink/10 bg-white text-ink hover:-translate-y-0.5 hover:border-ink/50'
+                  : 'border-transparent bg-ink/[0.03] text-ink/30',
+              !inRange ? 'opacity-40' : '',
+            ];
+
+            return free && inRange ? (
+              <a
+                href={hrefFor({ mes: `${year}-${String(month).padStart(2, '0')}`, fecha: day.iso, turno: null, duracion: duration })}
+                class:list={cellClass}
+                aria-label={`${formatLongYear(day.iso)}. Hay franja libre.`}
+                aria-current={isSelected ? 'date' : undefined}
+              >
+                <span class:list={['font-display text-base font-extrabold', isToday && !isSelected ? 'text-coral' : '']}>
+                  {day.day}
+                </span>
+                <span class="flex gap-1" aria-hidden="true">
+                  {info?.AM === 'free' && <span class:list={['h-1.5 w-1.5 rounded-full', isSelected ? 'bg-mint' : 'bg-mint']}></span>}
+                  {info?.PM === 'free' && <span class:list={['h-1.5 w-1.5 rounded-full', isSelected ? 'bg-sun' : 'bg-sun']}></span>}
+                </span>
+              </a>
+            ) : (
+              <div class:list={cellClass} aria-disabled="true">
+                <span class="font-display text-base font-extrabold">{day.day}</span>
+                <span class="text-[0.6rem] leading-none text-ink/30">{inRange && info ? statusLabel(info.AM === 'free' || info.PM === 'free' ? 'free' : info.AM === 'taken' || info.PM === 'taken' ? 'taken' : info.AM) : ''}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t-2 border-ink/10 pt-4 text-xs text-ink-soft">
+          <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-mint"></span> Mañana libre</span>
+          <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-sun"></span> Tarde libre</span>
+          <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-ink/15"></span> Ocupado o no disponible</span>
+        </div>
+      </div>
+
+      <!-- Panel de selección -->
+      <div class="flex flex-col gap-5">
+        {selectedDate && selectedAvailability ? (
+          <div class="card p-6">
+            <p class="font-display text-xs font-bold uppercase tracking-[0.16em] text-coral">Fecha elegida</p>
+            <h2 class="mt-1 text-2xl">{formatLongYear(selectedDate)}</h2>
+            <p class="mt-1 text-sm capitalize text-ink/50">{weekdayName(selectedDate)}</p>
+
+            <div class="mt-5 space-y-2">
+              {(['AM', 'PM'] as Turn[]).map((turn) => {
+                const status = selectedAvailability[turn];
+                const active = selectedTurn === turn && status === 'free';
+                return status === 'free' ? (
+                  <a
+                    href={hrefFor({ mes: monthPrefix, fecha: selectedDate, turno: turn, duracion: duration, ninos: initialChildren })}
+                    class:list={[
+                      'flex items-center justify-between rounded-2xl border-2 p-4 transition',
+                      active ? 'border-ink bg-ink text-cream' : 'border-ink/15 bg-white hover:border-ink/40',
+                    ]}
+                  >
+                    <span class="flex items-center gap-3">
+                      <Icon name={turn === 'AM' ? 'sun' : 'clock'} class="h-5 w-5" />
+                      <span>
+                        <span class="block font-display font-extrabold">{TURNS[turn].label}</span>
+                        <span class:list={['block text-xs', active ? 'text-cream/60' : 'text-ink/50']}>
+                          Desde {TURNS[turn].start}
+                        </span>
+                      </span>
+                    </span>
+                    <span class:list={['badge', active ? 'bg-mint text-ink' : 'bg-mint/40 text-ink']}>Libre</span>
+                  </a>
+                ) : (
+                  <div class="flex items-center justify-between rounded-2xl border-2 border-ink/10 bg-ink/[0.03] p-4 text-ink/40">
+                    <span class="flex items-center gap-3">
+                      <Icon name={turn === 'AM' ? 'sun' : 'clock'} class="h-5 w-5" />
+                      <span>
+                        <span class="block font-display font-extrabold">{TURNS[turn].label}</span>
+                        <span class="block text-xs">{TURNS[turn].start}</span>
+                      </span>
+                    </span>
+                    <span class="badge bg-ink/10 text-ink/40">{statusLabel(status)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div class="card bg-ink p-7 text-cream">
+            <span class="text-4xl" aria-hidden="true">👈</span>
+            <h2 class="mt-3 text-2xl text-cream">Toca un día del calendario</h2>
+            <p class="mt-2 text-sm leading-relaxed text-cream/65">
+              Los días con punto morado tienen franja libre. Al elegir el día verás si queda
+              mañana o tarde y podrás seleccionar la duración.
+            </p>
+            <div class="mt-5 rounded-2xl border border-cream/15 bg-cream/[0.05] p-4 text-sm">
+              <p class="font-display font-bold text-cream">¿No te encaja ningún día?</p>
+              <p class="mt-1 text-cream/60">
+                Escríbenos por WhatsApp: a veces se liberan fechas de última hora.
+              </p>
+              <a href="/contacto" class="mt-3 inline-flex items-center gap-2 font-display font-bold text-mint">
+                Contactar
+                <Icon name="arrow-right" class="h-4 w-4" />
+              </a>
+            </div>
+          </div>
+        )}
+
+        {selectedDate && selectedTurn && !turnIsFree && (
+          <div class="rounded-2xl border-2 border-coral/40 bg-coral/10 p-4 text-sm text-coral-dark">
+            Esa franja ya no está disponible. Elige otra, por favor.
+          </div>
+        )}
+      </div>
+    </div>
+  </section>
+
+  {selectedDate && selectedTurn && turnIsFree && (
+    <section class="pb-12">
+      <div class="wrap">
+        <form
+          id="fk-booking-form"
+          method="post"
+          action="/api/bookings"
+          class="grid gap-5 lg:grid-cols-[1.15fr_0.85fr] lg:items-start"
+          data-price-2h={PRICING.perChild2h}
+          data-price-3h={PRICING.perChild3h}
+          data-cleaning={PRICING.cleaning}
+          data-deposit={PRICING.deposit}
+          data-min={RULES.minChildren}
+          data-max={RULES.maxChildren}
+        >
+          <input type="hidden" name="date" value={selectedDate} />
+          <input type="hidden" name="turn" value={selectedTurn} />
+
+          <div class="card p-6 sm:p-8">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b-2 border-ink/10 pb-5">
+              <div>
+                <p class="font-display text-xs font-bold uppercase tracking-[0.16em] text-coral">Reserva</p>
+                <h2 class="mt-1 text-2xl">{formatLongYear(selectedDate)}</h2>
+                <p class="text-sm text-ink-soft">{TURNS[selectedTurn].label} · desde {TURNS[selectedTurn].start}</p>
+              </div>
+              <a href={hrefFor({ mes: monthPrefix, fecha: null, turno: null })} class="text-sm font-semibold text-ink-soft underline underline-offset-4 hover:text-ink">
+                Cambiar día
+              </a>
+            </div>
+
+            <fieldset class="mt-6">
+              <legend class="label">Duración de la fiesta</legend>
+              <div class="grid gap-2 sm:grid-cols-2">
+                {([2, 3] as Duration[]).map((d) => (
+                  <label class="relative flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-ink/15 bg-white p-4 transition has-[:checked]:border-ink has-[:checked]:bg-cream">
+                    <input type="radio" name="duration" value={d} checked={duration === d} class="mt-0.5 h-4 w-4 accent-ink" />
+                    <span>
+                      <span class="block font-display text-base font-extrabold">{d} horas</span>
+                      <span class="block text-xs text-ink-soft">
+                        {TURNS[selectedTurn].start} – {endTime(selectedTurn, d)}
+                      </span>
+                      <span class="mt-1 block text-sm font-bold">{formatEUR(d === 2 ? PRICING.perChild2h : PRICING.perChild3h)} / niño</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            <div class="mt-5 grid gap-4 sm:grid-cols-2">
+              <div>
+                <label for="children" class="label">Número de niños</label>
+                <div class="flex items-stretch overflow-hidden rounded-2xl border-2 border-ink/15 bg-white">
+                  <button type="button" data-step="-1" class="w-12 shrink-0 text-xl font-bold text-ink/60 hover:bg-cream" aria-label="Quitar un niño">−</button>
+                  <input
+                    id="children"
+                    name="children"
+                    type="number"
+                    inputmode="numeric"
+                    min={RULES.minChildren}
+                    max={RULES.maxChildren}
+                    step="1"
+                    value={initialChildren}
+                    required
+                    class="w-full border-x-2 border-ink/10 px-3 py-3 text-center font-display text-lg font-extrabold focus:outline-none"
+                  />
+                  <button type="button" data-step="1" class="w-12 shrink-0 text-xl font-bold text-ink/60 hover:bg-cream" aria-label="Añadir un niño">+</button>
+                </div>
+                <p class="mt-1.5 text-xs text-ink/50">Entre {RULES.minChildren} y {RULES.maxChildren} niños.</p>
+              </div>
+
+              <div class="flex items-end">
+                <label class="flex w-full cursor-pointer items-start gap-3 rounded-2xl border-2 border-ink/15 bg-white p-4 transition has-[:checked]:border-ink has-[:checked]:bg-cream">
+                  <input type="checkbox" name="cleaning" value="1" checked class="mt-0.5 h-4 w-4 accent-ink" />
+                  <span>
+                    <span class="block font-display text-sm font-extrabold">Limpieza extra</span>
+                    <span class="block text-xs text-ink-soft">Nosotros lo dejamos todo recogido · +{formatEUR(PRICING.cleaning)}</span>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <div class="mt-6 border-t-2 border-ink/10 pt-6">
+              <h3 class="text-xl">Tus datos</h3>
+              <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label for="customerName" class="label">Nombre y apellidos</label>
+                  <input id="customerName" name="customerName" type="text" autocomplete="name" required maxlength="120" class="field" placeholder="Marta Ruiz" />
+                </div>
+                <div>
+                  <label for="email" class="label">Email</label>
+                  <input id="email" name="email" type="email" autocomplete="email" required maxlength="160" class="field" placeholder="marta@email.com" />
+                </div>
+                <div>
+                  <label for="phone" class="label">Teléfono</label>
+                  <input id="phone" name="phone" type="tel" autocomplete="tel" required maxlength="40" class="field" placeholder="600 123 456" />
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label for="childName" class="label">Cumpleañero/a</label>
+                    <input id="childName" name="childName" type="text" required maxlength="80" class="field" placeholder="Lucía" />
+                  </div>
+                  <div>
+                    <label for="childAge" class="label">Edad</label>
+                    <input id="childAge" name="childAge" type="number" min="1" max="17" inputmode="numeric" class="field" placeholder="7" />
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-4">
+                <label for="notes" class="label">¿Algo que debamos saber? <span class="font-normal text-ink/45">(opcional)</span></label>
+                <textarea id="notes" name="notes" rows="3" maxlength="1000" class="field resize-y" placeholder="Alergias, necesidades especiales, si venís con hermanos pequeños…"></textarea>
+              </div>
+
+              <label class="mt-4 flex items-start gap-3 text-sm text-ink-soft">
+                <input type="checkbox" name="terms" value="1" required class="mt-0.5 h-4 w-4 shrink-0 accent-ink" />
+                <span>
+                  He leído y acepto las <a href="/legal/condiciones" target="_blank" class="link-underline">condiciones de reserva</a> y la
+                  <a href="/legal/privacidad" target="_blank" class="link-underline">política de privacidad</a>.
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Resumen -->
+          <aside class="card sticky top-24 p-6">
+            <h2 class="text-xl">Resumen</h2>
+            <dl class="mt-4 space-y-2 text-sm">
+              <div class="flex justify-between gap-3">
+                <dt class="text-ink-soft">Fecha</dt>
+                <dd class="text-right font-semibold">{formatLongYear(selectedDate)}</dd>
+              </div>
+              <div class="flex justify-between gap-3">
+                <dt class="text-ink-soft">Horario</dt>
+                <dd class="font-semibold" data-summary-slot>{TURNS[selectedTurn].start} – {endTime(selectedTurn, duration)}</dd>
+              </div>
+              <div class="flex justify-between gap-3">
+                <dt class="text-ink-soft">Duración</dt>
+                <dd class="font-semibold" data-summary-duration>{duration} horas</dd>
+              </div>
+              <div class="flex justify-between gap-3">
+                <dt class="text-ink-soft">Niños</dt>
+                <dd class="font-semibold" data-summary-children>{initialChildren}</dd>
+              </div>
+              <div class="flex justify-between gap-3">
+                <dt class="text-ink-soft">Limpieza</dt>
+                <dd class="font-semibold" data-summary-cleaning>{formatEUR(PRICING.cleaning)}</dd>
+              </div>
+            </dl>
+
+            <div class="mt-4 space-y-1 border-t-2 border-ink/10 pt-4 text-sm">
+              <div class="flex justify-between gap-3">
+                <span class="text-ink-soft">Subtotal</span>
+                <span class="font-semibold" data-summary-subtotal>—</span>
+              </div>
+              <div class="flex justify-between gap-3 text-base">
+                <span class="font-display font-extrabold">Total</span>
+                <span class="font-display text-xl font-extrabold" data-summary-total>—</span>
+              </div>
+            </div>
+
+            <div class="mt-4 rounded-2xl bg-cream p-4">
+              <div class="flex justify-between gap-3 text-sm">
+                <span class="font-semibold">Señal hoy</span>
+                <span class="font-display text-lg font-extrabold" data-summary-deposit>{formatEUR(PRICING.deposit)}</span>
+              </div>
+              <div class="mt-1 flex justify-between gap-3 text-xs text-ink-soft">
+                <span>Resto antes del cumple</span>
+                <span class="font-semibold" data-summary-balance>—</span>
+              </div>
+            </div>
+
+            <button type="submit" class="btn-primary mt-5 w-full px-6 py-4 text-lg" data-submit>
+              Reservar y pagar la señal
+              <Icon name="arrow-right" class="h-5 w-5" />
+            </button>
+
+            <p class="mt-3 flex items-start gap-2 text-xs text-ink/50">
+              <Icon name="lock" class="mt-0.5 h-4 w-4 shrink-0" />
+              Pago seguro con tarjeta o Bizum. La franja queda bloqueada durante 35 minutos mientras completas el pago.
+            </p>
+            <p class="mt-2 text-xs text-ink/50">
+              Al reservar aceptas la política de cancelación: devolución íntegra de la señal hasta {RULES.freeCancellationDays} días antes.
+            </p>
+          </aside>
+        </form>
+      </div>
+    </section>
+  )}
+
+  <section class="pb-8">
+    <div class="wrap grid gap-5 md:grid-cols-3">
+      {[
+        { icon: 'credit-card', title: 'Tarjeta o Bizum', text: 'Pago de la señal y del saldo con Stripe. Sin cuenta ni app.' },
+        { icon: 'users', title: 'Aforo flexible', text: `Puedes cambiar el número de niños hasta ${RULES.headcountCutoffDays} días antes.` },
+        { icon: 'shield', title: 'Cancelación clara', text: `Señal reembolsable hasta ${RULES.freeCancellationDays} días antes del evento.` },
+      ].map((item) => (
+        <div class="card flex gap-4 p-5">
+          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-mint">
+            <Icon name={item.icon} class="h-5 w-5" />
+          </span>
+          <div>
+            <h2 class="text-base">{item.title}</h2>
+            <p class="mt-1 text-sm text-ink-soft">{item.text}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <script>
+    const form = document.getElementById('fk-booking-form') as HTMLFormElement | null;
+    if (form) {
+      const price2h = Number(form.getAttribute('data-price-2h'));
+      const price3h = Number(form.getAttribute('data-price-3h'));
+      const cleaningPrice = Number(form.getAttribute('data-cleaning'));
+      const depositPrice = Number(form.getAttribute('data-deposit'));
+      const minChildren = Number(form.getAttribute('data-min'));
+      const maxChildren = Number(form.getAttribute('data-max'));
+
+      const childrenInput = form.querySelector<HTMLInputElement>('#children')!;
+      const cleaningInput = form.querySelector<HTMLInputElement>('input[name="cleaning"]')!;
+      const durationInputs = Array.from(form.querySelectorAll<HTMLInputElement>('input[name="duration"]'));
+      const submit = form.querySelector<HTMLButtonElement>('[data-submit]')!;
+
+      const eur = (cents: number) =>
+        new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(cents / 100);
+
+      const start = form.querySelector('input[name="turn"]')!.getAttribute('value') === 'AM' ? '10:30' : '16:30';
+
+      const out = {
+        slot: form.querySelector('[data-summary-slot]')!,
+        duration: form.querySelector('[data-summary-duration]')!,
+        children: form.querySelector('[data-summary-children]')!,
+        cleaning: form.querySelector('[data-summary-cleaning]')!,
+        subtotal: form.querySelector('[data-summary-subtotal]')!,
+        total: form.querySelector('[data-summary-total]')!,
+        deposit: form.querySelector('[data-summary-deposit]')!,
+        balance: form.querySelector('[data-summary-balance]')!,
+      };
+
+      function selectedDuration(): number {
+        const checked = durationInputs.find((i) => i.checked);
+        return checked ? Number(checked.value) : 3;
+      }
+
+      function endFor(duration: number): string {
+        const [h, m] = start.split(':').map(Number);
+        const total = h * 60 + m + duration * 60;
+        return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+      }
+
+      function render() {
+        const duration = selectedDuration();
+        let children = Number(childrenInput.value);
+        if (!Number.isFinite(children)) children = minChildren;
+        children = Math.min(maxChildren, Math.max(minChildren, Math.round(children)));
+
+        const cleaning = cleaningInput.checked;
+        const rate = duration === 2 ? price2h : price3h;
+        const subtotal = children * rate + (cleaning ? cleaningPrice : 0);
+        const deposit = Math.min(depositPrice, subtotal);
+
+        out.slot.textContent = `${start} – ${endFor(duration)}`;
+        out.duration.textContent = `${duration} horas`;
+        out.children.textContent = String(children);
+        out.cleaning.textContent = cleaning ? eur(cleaningPrice) : 'No incluida';
+        out.subtotal.textContent = eur(subtotal);
+        out.total.textContent = eur(subtotal);
+        out.deposit.textContent = eur(deposit);
+        out.balance.textContent = eur(subtotal - deposit);
+      }
+
+      durationInputs.forEach((input) => input.addEventListener('change', render));
+      cleaningInput.addEventListener('change', render);
+      childrenInput.addEventListener('input', render);
+      childrenInput.addEventListener('blur', () => {
+        const value = Number(childrenInput.value);
+        const clamped = Math.min(maxChildren, Math.max(minChildren, Number.isFinite(value) ? Math.round(value) : minChildren));
+        childrenInput.value = String(clamped);
+        render();
+      });
+
+      form.querySelectorAll<HTMLButtonElement>('[data-step]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const step = Number(button.dataset.step);
+          const value = Number(childrenInput.value) || minChildren;
+          childrenInput.value = String(Math.min(maxChildren, Math.max(minChildren, value + step)));
+          render();
+        });
+      });
+
+      form.addEventListener('submit', () => {
+        submit.disabled = true;
+        submit.classList.add('opacity-70');
+        submit.textContent = 'Preparando el pago…';
+      });
+
+      render();
+    }
+  </script>
+</BaseLayout>

@@ -1,0 +1,98 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Icon from '../../components/Icon.astro';
+import { getBookingByReference } from '../../lib/db';
+import { formatLongYear } from '../../lib/dates';
+import { formatEURExact } from '../../lib/money';
+import { slotLabel } from '../../lib/config';
+
+export const prerender = false;
+
+const { reference = '' } = Astro.params;
+const booking = getBookingByReference(reference);
+
+if (!booking) return Astro.redirect('/reservas?error=Reserva no encontrada.', 302);
+
+const kind = booking.status === 'pending' ? 'deposit' : 'balance';
+const amount = kind === 'deposit' ? booking.deposit_cents : Math.max(0, booking.subtotal_cents - booking.paid_cents);
+
+if (amount <= 0) return Astro.redirect(`/reserva/${booking.reference}`, 302);
+---
+
+<BaseLayout title="Pago de demostración" noindex>
+  <section class="py-12 sm:py-16">
+    <div class="wrap max-w-xl">
+      <div class="mb-6 rounded-2xl border-2 border-sun bg-sun/30 p-4 text-sm">
+        <p class="font-display font-extrabold">Esto es una demo</p>
+        <p class="mt-1 text-ink/70">
+          No hay Stripe configurado, así que este pago es simulado. No se moverá dinero real.
+          Añade las claves de Stripe en el archivo <code class="rounded bg-white/60 px-1">.env</code> para activar el pago real con tarjeta y Bizum.
+        </p>
+      </div>
+
+      <div class="card p-6 sm:p-8">
+        <div class="flex items-center justify-between gap-3 border-b-2 border-ink/10 pb-4">
+          <div>
+            <p class="font-display text-xs font-bold uppercase tracking-[0.16em] text-coral">Funny Kids</p>
+            <h1 class="mt-1 text-2xl">Pago de la reserva</h1>
+          </div>
+          <span class="badge bg-ink/5 text-ink/60">Modo demo</span>
+        </div>
+
+        <dl class="mt-5 space-y-2 text-sm">
+          <div class="flex justify-between gap-3"><dt class="text-ink-soft">Referencia</dt><dd class="font-mono font-semibold">{booking.reference}</dd></div>
+          <div class="flex justify-between gap-3"><dt class="text-ink-soft">Fecha</dt><dd class="text-right font-semibold">{formatLongYear(booking.date)}</dd></div>
+          <div class="flex justify-between gap-3"><dt class="text-ink-soft">Horario</dt><dd class="font-semibold">{slotLabel(booking.turn, booking.duration)}</dd></div>
+          <div class="flex justify-between gap-3"><dt class="text-ink-soft">Concepto</dt><dd class="font-semibold">{kind === 'deposit' ? 'Señal de reserva' : 'Saldo pendiente'}</dd></div>
+        </dl>
+
+        <div class="mt-5 rounded-2xl bg-cream p-4">
+          <div class="flex items-end justify-between gap-3">
+            <span class="font-display font-bold">Importe a pagar</span>
+            <span class="font-display text-3xl font-extrabold">{formatEURExact(amount)}</span>
+          </div>
+        </div>
+
+        <form method="post" action="/api/demo-pay" class="mt-6">
+          <input type="hidden" name="reference" value={booking.reference} />
+          <input type="hidden" name="kind" value={kind} />
+
+          <div class="space-y-4">
+            <div>
+              <label for="card" class="label">Número de tarjeta</label>
+              <input id="card" name="card" inputmode="numeric" value="4242 4242 4242 4242" class="field font-mono" readonly />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label for="exp" class="label">Caducidad</label>
+                <input id="exp" name="exp" value="12/34" class="field font-mono" readonly />
+              </div>
+              <div>
+                <label for="cvc" class="label">CVC</label>
+                <input id="cvc" name="cvc" value="123" class="field font-mono" readonly />
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-5 grid grid-cols-2 gap-2">
+            <span class="flex items-center justify-center gap-2 rounded-xl border-2 border-ink/10 bg-white py-3 text-xs font-bold text-ink/50">
+              <Icon name="credit-card" class="h-4 w-4" /> Tarjeta
+            </span>
+            <span class="flex items-center justify-center gap-2 rounded-xl border-2 border-ink/10 bg-white py-3 text-xs font-bold text-ink/30">
+              Bizum (no disponible en demo)
+            </span>
+          </div>
+
+          <button type="submit" class="btn-primary mt-5 w-full px-6 py-4 text-lg">
+            Pagar {formatEURExact(amount)}
+            <Icon name="lock" class="h-4 w-4" />
+          </button>
+        </form>
+
+        <a href={`/reserva/${booking.reference}`} class="mt-4 block text-center text-sm font-semibold text-ink-soft hover:text-ink">
+          Volver sin pagar
+        </a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

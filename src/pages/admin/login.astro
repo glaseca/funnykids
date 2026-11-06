@@ -1,0 +1,63 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { isAdmin } from '../../lib/auth';
+import Icon from '../../components/Icon.astro';
+
+export const prerender = false;
+
+if (isAdmin(Astro.cookies)) return Astro.redirect('/admin', 302);
+
+const error = Astro.url.searchParams.get('error');
+---
+
+<BaseLayout title="Acceso al panel" noindex bare>
+  <div class="flex min-h-screen items-center justify-center bg-ink px-5 py-16">
+    <div class="w-full max-w-md">
+      <a href="/" class="mb-8 flex items-center justify-center gap-3 text-cream">
+        <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-coral text-2xl" aria-hidden="true">🎈</span>
+        <span class="font-display text-2xl font-extrabold">Funny Kids</span>
+      </a>
+
+      <div class="rounded-[2rem] border-2 border-cream/15 bg-cream p-8">
+        <h1 class="text-3xl">Panel de reservas</h1>
+        <p class="mt-2 text-sm text-ink-soft">Acceso privado para el equipo de Funny Kids.</p>
+
+        {error && (
+          <div class="mt-5 rounded-2xl border-2 border-coral/40 bg-coral/10 p-3 text-sm font-semibold text-coral-dark">
+            Contraseña incorrecta. Inténtalo de nuevo.
+          </div>
+        )}
+
+        <form method="post" action="/api/auth" class="mt-6 space-y-4">
+          <input type="hidden" name="action" value="login" />
+          <div>
+            <label for="password" class="label">Contraseña</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              autofocus
+              autocomplete="current-password"
+              class="field"
+              placeholder="••••••••"
+            />
+          </div>
+          <button type="submit" class="btn-primary w-full">
+            Entrar
+            <Icon name="arrow-right" class="h-4 w-4" />
+          </button>
+        </form>
+
+        <p class="mt-6 rounded-2xl bg-sun/30 p-3 text-xs text-ink/70">
+          <strong>Demo:</strong> la contraseña es <code class="rounded bg-white px-1.5 py-0.5 font-mono">demo1234</code>.
+          Se cambia con la variable <code class="rounded bg-white px-1.5 py-0.5 font-mono">ADMIN_PASSWORD</code>.
+        </p>
+      </div>
+
+      <p class="mt-6 text-center text-xs text-cream/40">
+        <a href="/" class="hover:text-cream">Volver a la web</a>
+      </p>
+    </div>
+  </div>
+</BaseLayout>

@@ -1,0 +1,334 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icon.astro';
+import HeroScene from '../components/HeroScene.astro';
+import PhotoTile from '../components/PhotoTile.astro';
+import { BUSINESS, FAQ, FEATURES, GALLERY, STEPS, TESTIMONIALS } from '../lib/site';
+import { PRICING, RULES } from '../lib/config';
+import { formatEUR } from '../lib/money';
+
+const ticker = [
+  'Piscina de bolas',
+  'Futbolín',
+  'Zona de merienda',
+  'Sala en exclusiva',
+  'Microondas y nevera',
+  'Zona para familias',
+  'Aforo 50 niños',
+  '50 € de señal',
+];
+
+const iconForFeature: Record<string, string> = {
+  ball: 'ball',
+  foosball: 'foosball',
+  cake: 'cake',
+  sofa: 'sofa',
+};
+
+const toneForFeature: Record<string, string> = {
+  mint: 'bg-mint',
+  sun: 'bg-sun',
+  coral: 'bg-coral text-white',
+  lilac: 'bg-lilac',
+};
+---
+<BaseLayout title="Fiestas infantiles en Getafe">
+  <!-- Hero -->
+  <section class="relative overflow-hidden pb-16 pt-10 sm:pt-16">
+    <div class="wrap grid items-center gap-12 lg:grid-cols-[1.02fr_0.98fr]">
+      <div class="animate-rise">
+        <span class="eyebrow">
+          <Icon name="sparkles" class="h-4 w-4 text-coral" />
+          Cumpleaños en {BUSINESS.addressShort}
+        </span>
+
+        <h1 class="mt-6 text-[2.9rem] leading-[0.98] sm:text-6xl lg:text-[3.8rem] xl:text-[4.1rem]">
+          El cumpleaños que van a recordar
+          <span class="block text-coral">(y tú, sin organizar nada)</span>
+        </h1>
+
+        <p class="mt-6 max-w-xl text-lg leading-relaxed text-ink-soft">
+          Sala en exclusiva con piscina de bolas, futbolín y zona de merienda. Tú traes la tarta;
+          nosotros ponemos el espacio, el menaje y la limpieza.
+        </p>
+
+        <div class="mt-8 flex flex-wrap items-center gap-3">
+          <a href="/reservas" class="btn-primary px-7 py-4 text-lg">
+            Ver disponibilidad
+            <Icon name="arrow-right" class="h-5 w-5" />
+          </a>
+          <a href="/precios" class="btn-ghost px-7 py-4 text-lg">Ver precios</a>
+        </div>
+
+        <dl class="mt-10 flex flex-wrap gap-x-8 gap-y-4">
+          <div>
+            <dt class="text-xs font-bold uppercase tracking-[0.16em] text-ink/45">Aforo</dt>
+            <dd class="font-display text-2xl font-extrabold">{RULES.maxChildren} niños</dd>
+          </div>
+          <div>
+            <dt class="text-xs font-bold uppercase tracking-[0.16em] text-ink/45">Desde</dt>
+            <dd class="font-display text-2xl font-extrabold">{formatEUR(PRICING.perChild2h)} / niño</dd>
+          </div>
+          <div>
+            <dt class="text-xs font-bold uppercase tracking-[0.16em] text-ink/45">Señal</dt>
+            <dd class="font-display text-2xl font-extrabold">{formatEUR(PRICING.deposit)}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="relative animate-rise" style="animation-delay: 120ms">
+        <div class="card relative overflow-hidden p-2">
+          <div class="overflow-hidden rounded-[1.6rem]">
+            <HeroScene />
+          </div>
+        </div>
+
+        <div class="absolute -left-3 top-8 hidden rotate-[-6deg] rounded-2xl border-2 border-ink bg-white px-4 py-3 shadow-[0_4px_0_0_#17172B] sm:block">
+          <p class="font-display text-sm font-extrabold">Sala en exclusiva</p>
+          <p class="text-xs text-ink-soft">Sin otros cumples dentro</p>
+        </div>
+
+        <div class="absolute -bottom-4 right-2 hidden rotate-[4deg] rounded-2xl border-2 border-ink bg-mint px-4 py-3 shadow-[0_4px_0_0_#17172B] sm:block">
+          <p class="font-display text-sm font-extrabold">Tú traes la tarta</p>
+          <p class="text-xs text-ink/70">Nosotros ponemos el resto</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Ticker -->
+  <div class="overflow-hidden border-y-2 border-ink/10 bg-white py-4">
+    <div class="marquee-track flex w-max items-center gap-6">
+      {[...ticker, ...ticker].map((item) => (
+        <span class="flex items-center gap-6 whitespace-nowrap font-display text-lg font-bold text-ink/70">
+          {item}
+          <span class="text-coral" aria-hidden="true">✦</span>
+        </span>
+      ))}
+    </div>
+  </div>
+
+  <!-- Features -->
+  <section class="py-20 sm:py-24">
+    <div class="wrap">
+      <div class="max-w-2xl">
+        <span class="eyebrow">Todo en un mismo sitio</span>
+        <h2 class="mt-5 text-4xl sm:text-5xl">Una sala, mil rincones para jugar</h2>
+        <p class="mt-4 text-lg text-ink-soft">
+          Pensado para que los peques no se aburran y los mayores estén cómodos. Sin pantallas, sin ruido y sin salir del local.
+        </p>
+      </div>
+
+      <div class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {FEATURES.map((f) => (
+          <article class="card flex flex-col gap-4 p-6">
+            <span class:list={['flex h-14 w-14 items-center justify-center rounded-2xl border-2 border-ink/15', toneForFeature[f.color]]}>
+              <Icon name={iconForFeature[f.icon]} class="h-7 w-7" />
+            </span>
+            <h3 class="text-xl">{f.title}</h3>
+            <p class="text-sm leading-relaxed text-ink-soft">{f.text}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Galería -->
+  <section class="pb-20 sm:pb-24">
+    <div class="wrap">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div class="max-w-xl">
+          <span class="eyebrow">El espacio</span>
+          <h2 class="mt-5 text-4xl sm:text-5xl">Así se ve por dentro</h2>
+        </div>
+        <a href="/salas" class="btn-ghost">
+          Ver todas las salas
+          <Icon name="arrow-right" class="h-4 w-4" />
+        </a>
+      </div>
+
+      <div class="mt-8 grid auto-rows-[9rem] grid-cols-2 gap-4 sm:auto-rows-[11rem] lg:grid-cols-4">
+        {GALLERY.map((g) => (
+          <PhotoTile emoji={g.emoji} label={g.label} color={g.color} class={g.span} />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Precios -->
+  <section class="py-20 sm:py-24">
+    <div class="wrap">
+      <div class="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+        <div>
+          <span class="eyebrow">Precios claros</span>
+          <h2 class="mt-5 text-4xl sm:text-5xl">Pagas por niño. Nada más.</h2>
+          <p class="mt-4 text-lg text-ink-soft">
+            Sin packs obligatorios, sin menús y sin sorpresas. Elige cuánto tiempo queréis estar y cuántos peques venís.
+          </p>
+          <ul class="mt-6 space-y-3">
+            {[
+              'Sala en exclusiva durante toda la franja',
+              'Mesas, sillas, menaje y nevera incluidos',
+              'Limpieza final incluida (+20 € opcional)',
+              'Señal de 50 € y el resto cuando quieras',
+            ].map((item) => (
+              <li class="flex items-start gap-3 text-ink-soft">
+                <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-mint text-ink">
+                  <Icon name="check" class="h-3.5 w-3.5" />
+                </span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <article class="card relative flex flex-col p-7">
+            <p class="font-display text-sm font-bold uppercase tracking-[0.16em] text-ink/45">2 horas</p>
+            <p class="mt-3 flex items-end gap-1">
+              <span class="font-display text-5xl font-extrabold">{formatEUR(PRICING.perChild2h)}</span>
+              <span class="pb-1 text-ink-soft">/ niño</span>
+            </p>
+            <p class="mt-2 text-sm text-ink-soft">Ideal para los más peques o cumples de tarde.</p>
+            <hr class="my-5 border-ink/10" />
+            <ul class="space-y-2 text-sm text-ink-soft">
+              <li class="flex gap-2"><Icon name="check" class="h-4 w-4 text-coral" /> Mínimo {RULES.minChildren} niños</li>
+              <li class="flex gap-2"><Icon name="check" class="h-4 w-4 text-coral" /> Limpieza +{formatEUR(PRICING.cleaning)}</li>
+            </ul>
+            <a href="/reservas?duracion=2" class="btn-ghost mt-6 w-full">Reservar 2 h</a>
+          </article>
+
+          <article class="card relative flex flex-col border-coral/40 bg-white p-7">
+            <span class="absolute -top-3 left-6 rounded-full bg-coral px-3 py-1 font-display text-xs font-extrabold uppercase tracking-wide text-white">
+              El más elegido
+            </span>
+            <p class="font-display text-sm font-bold uppercase tracking-[0.16em] text-ink/45">3 horas</p>
+            <p class="mt-3 flex items-end gap-1">
+              <span class="font-display text-5xl font-extrabold">{formatEUR(PRICING.perChild3h)}</span>
+              <span class="pb-1 text-ink-soft">/ niño</span>
+            </p>
+            <p class="mt-2 text-sm text-ink-soft">Con tiempo de sobra para tarta, juegos y regalos.</p>
+            <hr class="my-5 border-ink/10" />
+            <ul class="space-y-2 text-sm text-ink-soft">
+              <li class="flex gap-2"><Icon name="check" class="h-4 w-4 text-coral" /> Mínimo {RULES.minChildren} niños</li>
+              <li class="flex gap-2"><Icon name="check" class="h-4 w-4 text-coral" /> Limpieza +{formatEUR(PRICING.cleaning)}</li>
+            </ul>
+            <a href="/reservas?duracion=3" class="btn-primary mt-6 w-full">Reservar 3 h</a>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Cómo funciona -->
+  <section class="pb-20 sm:pb-24">
+    <div class="wrap">
+      <div class="rounded-[2.5rem] border-2 border-ink/10 bg-ink px-6 py-14 text-cream sm:px-12">
+        <div class="max-w-2xl">
+          <span class="inline-flex items-center gap-2 rounded-full border border-cream/20 px-4 py-1.5 font-display text-sm font-bold uppercase tracking-[0.14em] text-cream/70">
+            Cómo funciona
+          </span>
+          <h2 class="mt-5 text-4xl text-cream sm:text-5xl">Reservar es lo más fácil del cumple</h2>
+        </div>
+
+        <div class="mt-10 grid gap-6 md:grid-cols-3">
+          {STEPS.map((step) => (
+            <div class="rounded-3xl border border-cream/15 bg-cream/[0.04] p-6">
+              <span class="font-display text-5xl font-extrabold text-coral">{step.n}</span>
+              <h3 class="mt-3 text-2xl text-cream">{step.title}</h3>
+              <p class="mt-2 text-sm leading-relaxed text-cream/65">{step.text}</p>
+            </div>
+          ))}
+        </div>
+
+        <div class="mt-10 flex flex-wrap items-center gap-4">
+          <a href="/reservas" class="btn-primary px-7 py-4 text-lg">
+            Elegir fecha
+            <Icon name="arrow-right" class="h-5 w-5" />
+          </a>
+          <a href={BUSINESS.phoneHref} class="flex items-center gap-2 font-display font-bold text-cream/80 hover:text-cream">
+            <Icon name="phone" class="h-4 w-4" />
+            {BUSINESS.phone}
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonios -->
+  <section class="pb-20 sm:pb-24">
+    <div class="wrap">
+      <div class="max-w-2xl">
+        <span class="eyebrow">Familias contentas</span>
+        <h2 class="mt-5 text-4xl sm:text-5xl">Lo que dicen los que ya han venido</h2>
+      </div>
+
+      <div class="mt-10 grid gap-5 md:grid-cols-3">
+        {TESTIMONIALS.map((t) => (
+          <figure class="card flex flex-col gap-4 p-6">
+            <div class="flex gap-1 text-coral" aria-label="5 de 5 estrellas">
+              {[0, 1, 2, 3, 4].map(() => <Icon name="star" class="h-4 w-4" />)}
+            </div>
+            <blockquote class="text-ink-soft">“{t.quote}”</blockquote>
+            <figcaption class="mt-auto">
+              <p class="font-display font-extrabold">{t.author}</p>
+              <p class="text-xs text-ink/45">{t.detail}</p>
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="pb-20 sm:pb-24">
+    <div class="wrap grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
+      <div>
+        <span class="eyebrow">Dudas frecuentes</span>
+        <h2 class="mt-5 text-4xl sm:text-5xl">Antes de reservar</h2>
+        <p class="mt-4 text-ink-soft">
+          Si te queda algo, escríbenos y te contestamos en el día.
+        </p>
+        <a href={`mailto:${BUSINESS.email}`} class="link-underline mt-4 inline-block">
+          {BUSINESS.email}
+        </a>
+      </div>
+
+      <div class="divide-y-2 divide-ink/10 rounded-[2rem] border-2 border-ink/10 bg-paper px-6">
+        {FAQ.map((item, i) => (
+          <details class="group py-5" open={i === 0}>
+            <summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-display text-lg font-bold">
+              {item.q}
+              <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-ink/15 transition group-open:rotate-45">
+                <Icon name="close" class="h-3.5 w-3.5 rotate-45" />
+              </span>
+            </summary>
+            <p class="mt-3 pr-10 text-ink-soft">{item.a}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="pb-4">
+    <div class="wrap">
+      <div class="relative overflow-hidden rounded-[2.5rem] border-2 border-ink bg-sun px-6 py-14 text-center sm:px-12">
+        <div class="absolute -left-10 top-6 h-32 w-32 rounded-full bg-white/40 blur-2xl" aria-hidden="true"></div>
+        <div class="absolute -right-8 bottom-0 h-40 w-40 rounded-full bg-coral/30 blur-2xl" aria-hidden="true"></div>
+
+        <h2 class="relative text-4xl sm:text-5xl">¿Vemos qué fin de semana os encaja?</h2>
+        <p class="relative mx-auto mt-4 max-w-xl text-lg text-ink/70">
+          Consulta el calendario en tiempo real y deja la fecha bloqueada con 50 €.
+        </p>
+        <div class="relative mt-8 flex flex-wrap justify-center gap-3">
+          <a href="/reservas" class="btn-dark px-7 py-4 text-lg">
+            Reservar ahora
+            <Icon name="arrow-right" class="h-5 w-5" />
+          </a>
+          <a href="/contacto" class="btn-ghost px-7 py-4 text-lg">Cómo llegar</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

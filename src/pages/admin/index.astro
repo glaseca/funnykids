@@ -1,0 +1,356 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Icon from '../../components/Icon.astro';
+import { isAdmin } from '../../lib/auth';
+import { getStats, pastBookings, upcomingBookings } from '../../lib/bookings';
+import { listClosures, listEmails } from '../../lib/db';
+import { formatLongYear, formatShort, todayISO } from '../../lib/dates';
+import { formatEUR, formatEURExact } from '../../lib/money';
+import { slotLabel, TURNS } from '../../lib/config';
+import { isDemoPayments } from '../../lib/env';
+
+export const prerender = false;
+
+if (!isAdmin(Astro.cookies)) return Astro.redirect('/admin/login', 302);
+
+const stats = getStats();
+const upcoming = upcomingBookings();
+const past = pastBookings();
+const closures = listClosures();
+const emails = listEmails(12);
+
+const ok = Astro.url.searchParams.get('ok');
+const error = Astro.url.searchParams.get('error');
+
+const statusMeta: Record<string, { label: string; class: string }> = {
+  pending: { label: 'Pendiente', class: 'bg-sun/50 text-ink' },
+  confirmed: { label: 'Confirmada', class: 'bg-mint text-ink' },
+  completed: { label: 'Celebrada', class: 'bg-sky text-ink' },
+  cancelled: { label: 'Cancelada', class: 'bg-ink/10 text-ink/50' },
+  expired: { label: 'Expirada', class: 'bg-ink/10 text-ink/50' },
+};
+
+const providerLabel: Record<string, string> = {
+  resend: 'Resend',
+  simulated: 'Simulado',
+  error: 'Error',
+};
+
+const occupancy = stats.monthCapacity > 0 ? Math.round((stats.monthConfirmed / stats.monthCapacity) * 100) : 0;
+const MONTHS_SHORT = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+---
+
+<BaseLayout title="Panel de reservas" noindex bare>
+  <div class="min-h-screen bg-cream">
+    <header class="sticky top-0 z-40 border-b-2 border-ink/10 bg-cream/90 backdrop-blur">
+      <div class="wrap flex h-16 items-center justify-between gap-4">
+        <a href="/admin" class="flex items-center gap-2.5">
+          <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-coral text-lg" aria-hidden="true">🎈</span>
+          <span class="font-display text-lg font-extrabold">Funny Kids <span class="text-ink/40">· panel</span></span>
+        </a>
+        <div class="flex items-center gap-2">
+          <a href="/" class="hidden rounded-full px-3 py-2 text-sm font-bold text-ink/60 hover:text-ink sm:inline-flex">Ver web</a>
+          <form method="post" action="/api/auth">
+            <input type="hidden" name="action" value="logout" />
+            <button type="submit" class="btn-ghost px-4 py-2 text-sm">Salir</button>
+          </form>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap py-8">
+      {isDemoPayments() && (
+        <div class="mb-6 rounded-2xl border-2 border-sun bg-sun/25 p-4 text-sm">
+          <p class="font-display font-extrabold">Modo demo activo</p>
+          <p class="mt-1 text-ink/70">
+            No hay claves de Stripe ni de Resend. Los pagos se simulan y los emails se guardan aquí abajo.
+            Rellena el archivo <code class="rounded bg-white/70 px-1">.env</code> para activar el envío real.
+          </p>
+        </div>
+      )}
+
+      {(ok || error) && (
+        <div
+          class:list={[
+            'mb-6 rounded-2xl border-2 p-4 text-sm font-semibold',
+            error ? 'border-coral/40 bg-coral/10 text-coral-dark' : 'border-mint bg-mint/20',
+          ]}
+        >
+          {ok ?? error}
+        </div>
+      )}
+
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 class="text-3xl sm:text-4xl">Reservas</h1>
+          <p class="mt-1 text-sm text-ink-soft">Hoy es {formatLongYear(todayISO())}.</p>
+        </div>
+        <form method="post" action="/api/admin">
+          <input type="hidden" name="action" value="run-reminders" />
+          <button type="submit" class="btn-ghost px-4 py-2.5 text-sm">
+            <Icon name="mail" class="h-4 w-4" /> Enviar recordatorios
+          </button>
+        </form>
+      </div>
+
+      <!-- Stats -->
+      <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="card p-5">
+          <p class="text-xs font-bold uppercase tracking-wide text-ink/40">Próximas</p>
+          <p class="mt-1 font-display text-3xl font-extrabold">{stats.upcoming}</p>
+          <p class="text-xs text-ink-soft">reservas confirmadas</p>
+        </div>
+        <div class="card p-5">
+          <p class="text-xs font-bold uppercase tracking-wide text-ink/40">Este mes</p>
+          <p class="mt-1 font-display text-3xl font-extrabold">{stats.monthConfirmed}<span class="text-lg text-ink/40">/{stats.monthCapacity}</span></p>
+          <div class="mt-2 h-2 overflow-hidden rounded-full bg-ink/10">
+            <div class="h-full rounded-full bg-coral" style={`width:${Math.min(100, occupancy)}%`}></div>
+          </div>
+          <p class="mt-1 text-xs text-ink-soft">{occupancy}% de franjas ocupadas</p>
+        </div>
+        <div class="card p-5">
+          <p class="text-xs font-bold uppercase tracking-wide text-ink/40">Facturación prevista</p>
+          <p class="mt-1 font-display text-3xl font-extrabold">{formatEUR(stats.revenueCents)}</p>
+          <p class="text-xs text-ink-soft">{formatEUR(stats.collectedCents)} cobrado</p>
+        </div>
+        <div class="card p-5">
+          <p class="text-xs font-bold uppercase tracking-wide text-ink/40">Pagos en curso</p>
+          <p class="mt-1 font-display text-3xl font-extrabold">{stats.pending}</p>
+          <p class="text-xs text-ink-soft">franjas bloqueadas sin pagar</p>
+        </div>
+      </div>
+
+      <!-- Próximas reservas -->
+      <section class="mt-8">
+        <h2 class="text-2xl">Próximas reservas</h2>
+
+        {upcoming.length === 0 ? (
+          <div class="card mt-4 p-8 text-center text-ink-soft">
+            No hay reservas próximas. Cuando entre una, aparecerá aquí.
+          </div>
+        ) : (
+          <div class="mt-4 space-y-3">
+            {upcoming.map((booking) => {
+              const pending = Math.max(0, booking.subtotal_cents - booking.paid_cents);
+              const meta = statusMeta[booking.status] ?? statusMeta.pending;
+              return (
+                <article class="card overflow-hidden">
+                  <div class="flex flex-wrap items-start justify-between gap-4 p-5">
+                    <div class="flex items-start gap-4">
+                      <div class="flex w-16 shrink-0 flex-col items-center rounded-2xl bg-ink px-2 py-2 text-cream">
+                        <span class="font-display text-xl font-extrabold leading-none">{booking.date.slice(8, 10)}</span>
+                        <span class="mt-1 text-[0.65rem] font-bold uppercase tracking-wide text-cream/60">{MONTHS_SHORT[Number(booking.date.slice(5, 7)) - 1]}</span>
+                      </div>
+                      <div>
+                        <div class="flex flex-wrap items-center gap-2">
+                          <span class:list={['badge', meta.class]}>{meta.label}</span>
+                          <span class="font-mono text-xs text-ink/40">{booking.reference}</span>
+                        </div>
+                        <h3 class="mt-1 text-lg">
+                          {booking.child_name} <span class="font-sans text-sm font-normal text-ink/50">· {booking.child_age ? `${booking.child_age} años` : 'edad sin indicar'}</span>
+                        </h3>
+                        <p class="text-sm text-ink-soft">
+                          {slotLabel(booking.turn, booking.duration)} · {TURNS[booking.turn].label} · {booking.children_final ?? booking.children} niños
+                          {booking.cleaning === 1 ? ' · limpieza extra' : ''}
+                        </p>
+                        <p class="mt-1 text-sm text-ink-soft">
+                          {booking.customer_name} · <a href={`tel:${booking.phone}`} class="hover:text-ink">{booking.phone}</a> ·
+                          <a href={`mailto:${booking.email}`} class="hover:text-ink"> {booking.email}</a>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div class="text-right">
+                      <p class="font-display text-xl font-extrabold">{formatEURExact(booking.subtotal_cents)}</p>
+                      <p class="text-xs text-ink-soft">Cobrado {formatEURExact(booking.paid_cents)}</p>
+                      {pending > 0 && <p class="text-xs font-bold text-coral-dark">Pendiente {formatEURExact(pending)}</p>}
+                    </div>
+                  </div>
+
+                  {booking.notes && (
+                    <p class="mx-5 mb-4 rounded-xl bg-cream px-4 py-2 text-sm text-ink-soft">
+                      <span class="font-bold text-ink">Notas:</span> {booking.notes}
+                    </p>
+                  )}
+
+                  <div class="flex flex-wrap items-center gap-2 border-t-2 border-ink/10 bg-white/60 px-5 py-3">
+                    {booking.status === 'pending' && (
+                      <form method="post" action="/api/admin">
+                        <input type="hidden" name="action" value="confirm" />
+                        <input type="hidden" name="id" value={booking.id} />
+                        <button type="submit" class="btn-primary px-4 py-2 text-xs">Confirmar a mano</button>
+                      </form>
+                    )}
+
+                    {booking.status === 'confirmed' && pending > 0 && (
+                      <form method="post" action="/api/admin">
+                        <input type="hidden" name="action" value="mark-paid" />
+                        <input type="hidden" name="id" value={booking.id} />
+                        <button type="submit" class="btn-ghost px-4 py-2 text-xs">Marcar saldo cobrado</button>
+                      </form>
+                    )}
+
+                    {booking.status === 'confirmed' && (
+                      <form method="post" action="/api/admin">
+                        <input type="hidden" name="action" value="complete" />
+                        <input type="hidden" name="id" value={booking.id} />
+                        <button type="submit" class="btn-ghost px-4 py-2 text-xs">Marcar celebrada</button>
+                      </form>
+                    )}
+
+                    <a href={`/reserva/${booking.reference}`} class="btn-ghost px-4 py-2 text-xs">Ver página</a>
+
+                    {booking.status !== 'cancelled' && (
+                      <form method="post" action="/api/admin" class="ml-auto">
+                        <input type="hidden" name="action" value="cancel" />
+                        <input type="hidden" name="id" value={booking.id} />
+                        <button type="submit" class="rounded-full px-4 py-2 text-xs font-bold text-coral-dark hover:bg-coral/10">
+                          Cancelar
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <div class="mt-8 grid gap-5 lg:grid-cols-[1fr_1fr]">
+        <!-- Cierres -->
+        <section class="card p-6">
+          <h2 class="text-2xl">Días cerrados</h2>
+          <p class="mt-1 text-sm text-ink-soft">Bloquea una fecha o una franja concreta sin crear una reserva.</p>
+
+          <form method="post" action="/api/admin" class="mt-4 grid gap-3 sm:grid-cols-2">
+            <input type="hidden" name="action" value="add-closure" />
+            <div>
+              <label for="closure-date" class="label">Fecha</label>
+              <input id="closure-date" type="date" name="date" required min={todayISO()} class="field" />
+            </div>
+            <div>
+              <label for="closure-turn" class="label">Franja</label>
+              <select id="closure-turn" name="turn" class="field">
+                <option value="">Todo el día</option>
+                <option value="AM">Mañana</option>
+                <option value="PM">Tarde</option>
+              </select>
+            </div>
+            <div class="sm:col-span-2">
+              <label for="closure-reason" class="label">Motivo (opcional)</label>
+              <input id="closure-reason" type="text" name="reason" maxlength="120" class="field" placeholder="Vacaciones, mantenimiento…" />
+            </div>
+            <div class="sm:col-span-2">
+              <button type="submit" class="btn-dark w-full px-4 py-2.5 text-sm">Añadir cierre</button>
+            </div>
+          </form>
+
+          {closures.length > 0 ? (
+            <ul class="mt-5 divide-y-2 divide-ink/10">
+              {closures.map((closure) => (
+                <li class="flex items-center justify-between gap-3 py-3 text-sm">
+                  <div>
+                    <p class="font-semibold">{formatLongYear(closure.date)}</p>
+                    <p class="text-xs text-ink-soft">
+                      {closure.turn ? TURNS[closure.turn].label : 'Todo el día'}{closure.reason ? ` · ${closure.reason}` : ''}
+                    </p>
+                  </div>
+                  <form method="post" action="/api/admin">
+                    <input type="hidden" name="action" value="remove-closure" />
+                    <input type="hidden" name="closureId" value={closure.id} />
+                    <button type="submit" class="rounded-full px-3 py-1.5 text-xs font-bold text-coral-dark hover:bg-coral/10">Quitar</button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p class="mt-5 text-sm text-ink-soft">No hay cierres programados.</p>
+          )}
+        </section>
+
+        <!-- Emails -->
+        <section class="card p-6">
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-2xl">Emails</h2>
+            <span class="badge bg-ink/5 text-ink/50">Últimos {emails.length}</span>
+          </div>
+          <p class="mt-1 text-sm text-ink-soft">
+            {isDemoPayments() ? 'En modo demo se guardan aquí en lugar de enviarse.' : 'Registro de los últimos envíos.'}
+          </p>
+
+          {emails.length === 0 ? (
+            <p class="mt-5 text-sm text-ink-soft">Todavía no se ha enviado ningún email.</p>
+          ) : (
+            <div class="mt-4 space-y-2">
+              {emails.map((email) => (
+                <details class="rounded-xl border-2 border-ink/10 bg-white">
+                  <summary class="cursor-pointer list-none px-4 py-3">
+                    <span class="flex flex-wrap items-center justify-between gap-2">
+                      <span class="font-display text-sm font-bold">{email.subject}</span>
+                      <span
+                        class:list={[
+                          'badge text-[0.6rem]',
+                          email.provider === 'error' ? 'bg-coral/20 text-coral-dark' : email.provider === 'resend' ? 'bg-mint text-ink' : 'bg-sun/40 text-ink',
+                        ]}
+                      >
+                        {providerLabel[email.provider] ?? email.provider}
+                      </span>
+                    </span>
+                    <span class="mt-1 block text-xs text-ink/45">{email.to_email} · {new Date(email.created_at).toLocaleString('es-ES')}</span>
+                  </summary>
+                  <div class="border-t-2 border-ink/10 p-2">
+                    <iframe
+                      srcdoc={email.body}
+                      title={`Contenido del email: ${email.subject}`}
+                      sandbox=""
+                      class="h-72 w-full rounded-lg border border-ink/10 bg-white"
+                    ></iframe>
+                  </div>
+                </details>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+
+      <!-- Histórico -->
+      <section class="mt-8">
+        <h2 class="text-2xl">Histórico reciente</h2>
+        {past.length === 0 ? (
+          <p class="mt-3 text-sm text-ink-soft">Aún no hay eventos pasados.</p>
+        ) : (
+          <div class="card mt-3 overflow-x-auto">
+            <table class="w-full min-w-[42rem] text-left text-sm">
+              <thead class="border-b-2 border-ink/10 text-xs uppercase tracking-wide text-ink/40">
+                <tr>
+                  <th class="px-4 py-3">Fecha</th>
+                  <th class="px-4 py-3">Referencia</th>
+                  <th class="px-4 py-3">Cumpleañero</th>
+                  <th class="px-4 py-3">Niños</th>
+                  <th class="px-4 py-3">Total</th>
+                  <th class="px-4 py-3">Estado</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-ink/10">
+                {past.map((booking) => {
+                  const meta = statusMeta[booking.status] ?? statusMeta.pending;
+                  return (
+                    <tr>
+                      <td class="px-4 py-3 capitalize">{formatShort(booking.date)}</td>
+                      <td class="px-4 py-3 font-mono text-xs text-ink/50">{booking.reference}</td>
+                      <td class="px-4 py-3">{booking.child_name}</td>
+                      <td class="px-4 py-3">{booking.children_final ?? booking.children}</td>
+                      <td class="px-4 py-3">{formatEURExact(booking.subtotal_cents)}</td>
+                      <td class="px-4 py-3"><span class:list={['badge', meta.class]}>{meta.label}</span></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </main>
+  </div>
+</BaseLayout>
