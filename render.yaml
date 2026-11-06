@@ -1,0 +1,31 @@
+# Despliegue de demostración en Render (https://render.com).
+#
+# Plan gratuito:
+#   - El servicio se duerme tras 15 min sin visitas (tarda ~1 min en despertar).
+#   - El disco es efímero: la base SQLite se reinicia en cada deploy o reinicio
+#     y se vuelve a sembrar con las 2 reservas de ejemplo. Suficiente para
+#     enseñar el diseño al cliente, NO para uso real.
+#
+# Para producción:
+#   - Cambia `plan` a `starter`.
+#   - Añade un disco en /var/data y define DB_PATH=/var/data/funnykids.db.
+#   - Rellena las claves de Stripe y Resend en el panel de Render.
+
+services:
+  - type: web
+    name: funnykids-demo
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      # Cuando Render asigne la URL, descomenta y ajusta (opcional):
+      # - key: SITE_URL
+      #   value: https://funnykids-demo.onrender.com

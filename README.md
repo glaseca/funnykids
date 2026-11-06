@@ -164,6 +164,30 @@ Para poner fotos reales:
 
 ## Despliegue
 
+### Demo rápida en Render (gratis)
+
+El repo incluye `render.yaml` para desplegar la demo con un Blueprint:
+
+1. Entra en [dashboard.render.com](https://dashboard.render.com) → **New** → **Blueprint**.
+2. Conecta tu cuenta de GitHub y elige el repo `funnykids`.
+3. Revisa el servicio `funnykids-demo` y pulsa **Apply**. El primer build tarda unos minutos.
+4. Cuando termine, abre la URL `https://funnykids-demo.onrender.com` (o la que te asigne).
+5. La contraseña del panel `/admin` es un valor aleatorio generado por Render: cópiala de
+   **Environment** → `ADMIN_PASSWORD`. Si prefieres una fija, cámbiala ahí y guarda.
+
+Notas del plan gratuito:
+
+- El servicio **se duerme a los 15 min** sin visitas. Ábrelo un par de minutos antes de
+  enseñárselo al cliente para que no vea la pantalla de espera.
+- **El disco es efímero**: cada deploy o reinicio borra la base de datos y vuelve a sembrar
+  las 2 reservas de ejemplo. Perfecto para una demo de diseño, no para reservas reales.
+- Sin claves de Stripe ni Resend: los pagos son simulados y los emails se ven en `/admin`.
+
+Para pasar a producción, cambia el plan a `starter`, añade un disco persistente en
+`/var/data` y define `DB_PATH=/var/data/funnykids.db` (y las claves reales de Stripe/Resend).
+
+### Requisitos en producción
+
 La app necesita:
 
 - Proceso **Node persistente**.
